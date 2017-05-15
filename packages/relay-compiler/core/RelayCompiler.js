@@ -18,6 +18,8 @@ const RelayPrinter = require('RelayPrinter');
 
 const filterContextForNode = require('filterContextForNode');
 
+const request = require('sync-request');
+
 import type {GeneratedNode} from 'RelayConcreteNode';
 import type {Fragment, Root} from 'RelayIR';
 import type {IRTransform} from 'RelayIRTransforms';
@@ -137,7 +139,7 @@ class RelayCompiler {
       const codeGenNode = codeGenContext.getRoot(name);
       const generatedQuery = RelayCodeGenerator.generate(codeGenNode);
 
-      const batchQuery = {
+      let batchQuery = {
         fragment: generatedFragment,
         id: null,
         kind: 'Batch',
@@ -146,6 +148,14 @@ class RelayCompiler {
         query: generatedQuery,
         text,
       };
+
+      const res = request('POST', 'http://localhost:8080/graphql/r', {
+        json: { name: batchQuery.name, text: batchQuery.text }
+      });
+
+      const data = JSON.parse(res.getBody('utf8'));
+
+      batchQuery.id = data.id;
       compiledDocuments.set(name, batchQuery);
     });
     return compiledDocuments;

@@ -88,6 +88,7 @@ const babelOptions = require('./scripts/getBabelOptions')({
     'path': 'path',
     'prop-types': 'prop-types',
     'signedsource': 'signedsource',
+    'sync-request': 'sync-request',
     'util': 'util',
     'yargs': 'yargs',
   },

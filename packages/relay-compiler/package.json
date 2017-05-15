@@ -25,6 +25,7 @@
     "immutable": "^3.8.1",
     "relay-runtime": "1.0.0-rc.2",
     "signedsource": "^1.0.0",
+    "sync-request": "^4.0.2",
     "yargs": "^7.0.2"
   }
 }
