@@ -5,6 +5,8 @@
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ * @format
  */
 
 'use strict';
@@ -12,10 +14,10 @@
 const Deferred = require('Deferred');
 const RelayInMemoryRecordSource = require('RelayInMemoryRecordSource');
 const RelayMarkSweepStore = require('RelayMarkSweepStore');
+const RelayModernEnvironment = require('RelayModernEnvironment');
+const RelayModernTestUtils = require('RelayModernTestUtils');
 const RelayNetwork = require('RelayNetwork');
 const RelayRecordSourceInspector = require('RelayRecordSourceInspector');
-const RelayStaticEnvironment = require('RelayStaticEnvironment');
-const RelayStaticTestUtils = require('RelayStaticTestUtils');
 const RelayTestSchema = require('RelayTestSchema');
 
 const areEqual = require('areEqual');
@@ -47,7 +49,7 @@ function mockDisposableMethod(object, key) {
  * Usage:
  *
  * ```
- * const environment = RelayStaticMockEnvironment.createMockEnvironment();
+ * const environment = RelayModernMockEnvironment.createMockEnvironment();
  * ```
  *
  * Mock API:
@@ -83,26 +85,32 @@ function createMockEnvironment(options: {
 
   // Helper to compile a query with the given schema (or the test schema by
   // default).
-  const compile = (text) => {
-    return RelayStaticTestUtils.generateAndCompile(text, schema || RelayTestSchema);
+  const compile = text => {
+    return RelayModernTestUtils.generateAndCompile(
+      text,
+      schema || RelayTestSchema,
+    );
   };
 
   // Helper to determine if a given query/variables pair is pending
   const isLoading = (query, variables, cacheConfig) => {
-    return pendingFetches.some(pending => (
-      pending.query === query &&
-      areEqual(pending.variables, variables) &&
-      areEqual(pending.cacheConfig, cacheConfig)
-    ));
+    return pendingFetches.some(
+      pending =>
+        pending.query === query &&
+        areEqual(pending.variables, variables) &&
+        areEqual(pending.cacheConfig, cacheConfig),
+    );
   };
 
   // Helpers to reject or resolve the payload for an individual query
   const reject = (query, error) => {
-    const pendingFetch = pendingFetches.find(pending => pending.query === query);
+    const pendingFetch = pendingFetches.find(
+      pending => pending.query === query,
+    );
     invariant(
       pendingFetch,
       'MockEnvironment#reject(): Cannot reject query `%s`, it has not been fetched yet.',
-      query.name
+      query.name,
     );
     if (typeof error === 'string') {
       error = new Error(error);
@@ -113,14 +121,18 @@ function createMockEnvironment(options: {
   };
   const resolve = (query, payload) => {
     invariant(
-      typeof payload === 'object' && payload !== null && payload.hasOwnProperty('data'),
-      'MockEnvironment#resolve(): Expected payload to be an object with a `data` key.'
+      typeof payload === 'object' &&
+        payload !== null &&
+        payload.hasOwnProperty('data'),
+      'MockEnvironment#resolve(): Expected payload to be an object with a `data` key.',
     );
-    const pendingFetch = pendingFetches.find(pending => pending.query === query);
+    const pendingFetch = pendingFetches.find(
+      pending => pending.query === query,
+    );
     invariant(
       pendingFetch,
       'MockEnvironment#resolve(): Cannot resolve query `%s`, it has not been fetched yet.',
-      query.name
+      query.name,
     );
     pendingFetches = pendingFetches.filter(pending => pending !== pendingFetch);
     pendingFetch.deferred.resolve(payload);
@@ -131,7 +143,7 @@ function createMockEnvironment(options: {
   const storeInspector = new RelayRecordSourceInspector(source);
 
   // Mock instance
-  const environment = new RelayStaticEnvironment({
+  const environment = new RelayModernEnvironment({
     handlerProvider,
     network: RelayNetwork.create(fetch),
     store,

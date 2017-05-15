@@ -5,31 +5,32 @@
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ * @format
  */
 
 'use strict';
 
-jest
-  .autoMockOff();
+jest.autoMockOff();
 
 const Deferred = require('Deferred');
-const RelayStaticEnvironment = require('RelayStaticEnvironment');
+const RelayModernEnvironment = require('RelayModernEnvironment');
 const RelayInMemoryRecordSource = require('RelayInMemoryRecordSource');
 const RelayMarkSweepStore = require('RelayMarkSweepStore');
 const RelayNetwork = require('RelayNetwork');
 const {ROOT_ID} = require('RelayStoreUtils');
-const RelayStaticTestUtils = require('RelayStaticTestUtils');
-const {createOperationSelector} = require('RelayStaticOperationSelector');
+const RelayModernTestUtils = require('RelayModernTestUtils');
+const {createOperationSelector} = require('RelayModernOperationSelector');
 
-describe('RelayStaticEnvironment', () => {
-  const {generateAndCompile} = RelayStaticTestUtils;
+describe('RelayModernEnvironment', () => {
+  const {generateAndCompile} = RelayModernTestUtils;
   let config;
   let source;
   let store;
 
   beforeEach(() => {
     jest.resetModules();
-    jasmine.addMatchers(RelayStaticTestUtils.matchers);
+    jasmine.addMatchers(RelayModernTestUtils.matchers);
     source = new RelayInMemoryRecordSource();
     store = new RelayMarkSweepStore(source);
 
@@ -41,8 +42,62 @@ describe('RelayStaticEnvironment', () => {
 
   describe('getStore()', () => {
     it('returns the store passed to the constructor', () => {
-      const environment = new RelayStaticEnvironment(config);
+      const environment = new RelayModernEnvironment(config);
       expect(environment.getStore()).toBe(store);
+    });
+  });
+
+  describe('check()', () => {
+    let ParentQuery;
+    let environment;
+    let selector;
+
+    beforeEach(() => {
+      ({ParentQuery} = generateAndCompile(
+        `
+        query ParentQuery($size: Int!) {
+          me {
+            id
+            name
+            profilePicture(size: $size) {
+              uri
+            }
+          }
+        }
+      `,
+      ));
+      environment = new RelayModernEnvironment(config);
+      selector = {
+        dataID: ROOT_ID,
+        node: ParentQuery.query,
+        variables: {size: 32},
+      };
+    });
+
+    it('returns true if all data exists in the environment', () => {
+      environment.commitPayload(selector, {
+        me: {
+          id: '4',
+          name: 'Zuck',
+          profilePicture: {
+            uri: 'https://...',
+          },
+        },
+      });
+      expect(environment.check(selector)).toBe(true);
+    });
+
+    it('returns false if data is missing from the environment', () => {
+      environment.commitPayload(selector, {
+        me: {
+          id: '4',
+          name: 'Zuck',
+          profilePicture: {
+            uri: undefined,
+          },
+        },
+      });
+      expect(environment.check(selector)).toBe(false);
     });
   });
 
@@ -51,7 +106,8 @@ describe('RelayStaticEnvironment', () => {
     let environment;
 
     beforeEach(() => {
-      ({ParentQuery} = generateAndCompile(`
+      ({ParentQuery} = generateAndCompile(
+        `
         query ParentQuery {
           me {
             id
@@ -62,8 +118,9 @@ describe('RelayStaticEnvironment', () => {
           id
           name
         }
-      `));
-      environment = new RelayStaticEnvironment(config);
+      `,
+      ));
+      environment = new RelayModernEnvironment(config);
       environment.commitPayload(
         {
           dataID: ROOT_ID,
@@ -75,7 +132,7 @@ describe('RelayStaticEnvironment', () => {
             id: '4',
             name: 'Zuck',
           },
-        }
+        },
       );
     });
 
@@ -106,7 +163,8 @@ describe('RelayStaticEnvironment', () => {
     }
 
     beforeEach(() => {
-      ({ParentQuery} = generateAndCompile(`
+      ({ParentQuery} = generateAndCompile(
+        `
         query ParentQuery {
           me {
             id
@@ -117,8 +175,9 @@ describe('RelayStaticEnvironment', () => {
           id
           name
         }
-      `));
-      environment = new RelayStaticEnvironment(config);
+      `,
+      ));
+      environment = new RelayModernEnvironment(config);
       environment.commitPayload(
         {
           dataID: ROOT_ID,
@@ -130,7 +189,7 @@ describe('RelayStaticEnvironment', () => {
             id: '4',
             name: 'Zuck',
           },
-        }
+        },
       );
     });
 
@@ -172,7 +231,8 @@ describe('RelayStaticEnvironment', () => {
     let environment;
 
     beforeEach(() => {
-      ({ParentQuery} = generateAndCompile(`
+      ({ParentQuery} = generateAndCompile(
+        `
         query ParentQuery {
           me {
             id
@@ -183,8 +243,9 @@ describe('RelayStaticEnvironment', () => {
           id
           name
         }
-      `));
-      environment = new RelayStaticEnvironment(config);
+      `,
+      ));
+      environment = new RelayModernEnvironment(config);
       environment.commitPayload(
         {
           dataID: ROOT_ID,
@@ -196,7 +257,7 @@ describe('RelayStaticEnvironment', () => {
             id: '4',
             name: 'Zuck',
           },
-        }
+        },
       );
     });
 
@@ -250,13 +311,15 @@ describe('RelayStaticEnvironment', () => {
     let environment;
 
     beforeEach(() => {
-      ({UserFragment} = generateAndCompile(`
+      ({UserFragment} = generateAndCompile(
+        `
         fragment UserFragment on User {
           id
           name
         }
-      `));
-      environment = new RelayStaticEnvironment(config);
+      `,
+      ));
+      environment = new RelayModernEnvironment(config);
     });
 
     it('applies the mutation to the store', () => {
@@ -307,16 +370,18 @@ describe('RelayStaticEnvironment', () => {
     let environment;
 
     beforeEach(() => {
-      ({ActorQuery} = generateAndCompile(`
+      ({ActorQuery} = generateAndCompile(
+        `
         query ActorQuery {
           me {
             name
           }
         }
-      `));
+      `,
+      ));
       store.notify = jest.fn(store.notify.bind(store));
       store.publish = jest.fn(store.publish.bind(store));
-      environment = new RelayStaticEnvironment(config);
+      environment = new RelayModernEnvironment(config);
     });
 
     it('applies server updates', () => {
@@ -341,7 +406,7 @@ describe('RelayStaticEnvironment', () => {
             __typename: 'User',
             name: 'Zuck',
           },
-        }
+        },
       );
       expect(callback.mock.calls.length).toBe(1);
       expect(callback.mock.calls[0][0].data).toEqual({
@@ -381,7 +446,7 @@ describe('RelayStaticEnvironment', () => {
             __typename: 'User',
             name: 'Zuck',
           },
-        }
+        },
       );
       expect(callback.mock.calls.length).toBe(1);
       expect(callback.mock.calls[0][0].data).toEqual({
@@ -405,7 +470,8 @@ describe('RelayStaticEnvironment', () => {
     let variables;
 
     beforeEach(() => {
-      ({ActorQuery: query} = generateAndCompile(`
+      ({ActorQuery: query} = generateAndCompile(
+        `
         query ActorQuery($fetchSize: Boolean!) {
           me {
             name
@@ -414,7 +480,8 @@ describe('RelayStaticEnvironment', () => {
             }
           }
         }
-      `));
+      `,
+      ));
       variables = {fetchSize: false};
       operation = createOperationSelector(query, {
         ...variables,
@@ -427,7 +494,7 @@ describe('RelayStaticEnvironment', () => {
       callbacks = {onCompleted, onError, onNext};
       deferred = new Deferred();
       fetch = jest.fn(() => deferred.getPromise());
-      environment = new RelayStaticEnvironment({
+      environment = new RelayModernEnvironment({
         network: RelayNetwork.create(fetch),
         store,
       });
@@ -540,7 +607,8 @@ describe('RelayStaticEnvironment', () => {
     let variables;
 
     beforeEach(() => {
-      ({ActorQuery: query} = generateAndCompile(`
+      ({ActorQuery: query} = generateAndCompile(
+        `
         query ActorQuery($fetchSize: Boolean!) {
           me {
             name
@@ -549,7 +617,8 @@ describe('RelayStaticEnvironment', () => {
             }
           }
         }
-      `));
+      `,
+      ));
       variables = {fetchSize: false};
       operation = createOperationSelector(query, {
         ...variables,
@@ -570,8 +639,7 @@ describe('RelayStaticEnvironment', () => {
               return;
             }
             // Reuse RelayNetwork's helper for response processing
-            RelayNetwork
-              .create(() => Promise.resolve(data))
+            RelayNetwork.create(() => Promise.resolve(data))
               .request(query, variables, cacheConfig)
               .then(payload => observer.onNext && observer.onNext(payload))
               .catch(error => observer.onError && observer.onError(error));
@@ -593,7 +661,7 @@ describe('RelayStaticEnvironment', () => {
           },
         };
       });
-      environment = new RelayStaticEnvironment({
+      environment = new RelayModernEnvironment({
         network: {
           request: () => new Deferred(), // not used in this test
           requestStream: fetch,
@@ -730,10 +798,8 @@ describe('RelayStaticEnvironment', () => {
     let variables;
 
     beforeEach(() => {
-      ({
-        CreateCommentMutation,
-        CommentFragment,
-      } = generateAndCompile(`
+      ({CreateCommentMutation, CommentFragment} = generateAndCompile(
+        `
         mutation CreateCommentMutation($input: CommentCreateInput!) {
           commentCreate(input: $input) {
             comment {
@@ -750,7 +816,8 @@ describe('RelayStaticEnvironment', () => {
             text
           }
         }
-      `));
+      `,
+      ));
       variables = {
         input: {
           clientMutationId: '0',
@@ -761,7 +828,7 @@ describe('RelayStaticEnvironment', () => {
 
       deferred = new Deferred();
       fetch = jest.fn(() => deferred.getPromise());
-      environment = new RelayStaticEnvironment({
+      environment = new RelayModernEnvironment({
         network: RelayNetwork.create(fetch),
         store,
       });
@@ -796,7 +863,7 @@ describe('RelayStaticEnvironment', () => {
         onCompleted,
         onError,
         operation,
-        optimisticUpdater: (store) => {
+        optimisticUpdater: store => {
           const comment = store.create(commentID, 'Comment');
           comment.setValue(commentID, 'id');
           const body = store.create(commentID + '.text', 'Text');
@@ -830,7 +897,7 @@ describe('RelayStaticEnvironment', () => {
         onCompleted,
         onError,
         operation,
-        optimisticUpdater: (store) => {
+        optimisticUpdater: store => {
           const comment = store.create(commentID, 'Comment');
           comment.setValue(commentID, 'id');
           const body = store.create(commentID + '.text', 'Text');
@@ -861,7 +928,7 @@ describe('RelayStaticEnvironment', () => {
         onCompleted,
         onError,
         operation,
-        optimisticUpdater: (store) => {
+        optimisticUpdater: store => {
           const comment = store.create(commentID, 'Comment');
           comment.setValue(commentID, 'id');
           const body = store.create(commentID + '.text', 'Text');
@@ -911,7 +978,7 @@ describe('RelayStaticEnvironment', () => {
         onCompleted,
         onError,
         operation,
-        updater: (store) => {
+        updater: store => {
           const comment = store.get(commentID);
           const body = comment.getLinkedRecord('body');
           body.setValue(body.getValue('text').toUpperCase(), 'text');
@@ -959,7 +1026,7 @@ describe('RelayStaticEnvironment', () => {
         onCompleted,
         onError,
         operation,
-        optimisticUpdater: (store) => {
+        optimisticUpdater: store => {
           const comment = store.create(commentID, 'Comment');
           comment.setValue(commentID, 'id');
           const body = store.create(commentID + '.text', 'Text');
@@ -993,7 +1060,7 @@ describe('RelayStaticEnvironment', () => {
         onCompleted,
         onError,
         operation,
-        optimisticUpdater: (store) => {
+        optimisticUpdater: store => {
           const comment = store.create(commentID, 'Comment');
           comment.setValue(commentID, 'id');
           const body = store.create(commentID + '.text', 'Text');

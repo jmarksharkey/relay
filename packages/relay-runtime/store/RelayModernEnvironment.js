@@ -6,8 +6,9 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @providesModule RelayStaticEnvironment
+ * @providesModule RelayModernEnvironment
  * @flow
+ * @format
  */
 
 'use strict';
@@ -44,16 +45,16 @@ export type EnvironmentConfig = {
   store: Store,
 };
 
-class RelayStaticEnvironment implements Environment {
+class RelayModernEnvironment implements Environment {
   _network: Network;
   _publishQueue: RelayPublishQueue;
   _store: Store;
   unstable_internal: UnstableEnvironmentCore;
 
   constructor(config: EnvironmentConfig) {
-    const handlerProvider = config.handlerProvider ?
-      config.handlerProvider :
-      RelayDefaultHandlerProvider;
+    const handlerProvider = config.handlerProvider
+      ? config.handlerProvider
+      : RelayDefaultHandlerProvider;
     this._network = config.network;
     this._publishQueue = new RelayPublishQueue(config.store, handlerProvider);
     this._store = config.store;
@@ -65,19 +66,21 @@ class RelayStaticEnvironment implements Environment {
   }
 
   applyUpdate(updater: StoreUpdater): Disposable {
+    const optimisticUpdate = {storeUpdater: updater};
     const dispose = () => {
-      this._publishQueue.revertUpdate(updater);
+      this._publishQueue.revertUpdate(optimisticUpdate);
       this._publishQueue.run();
     };
-    this._publishQueue.applyUpdate(updater);
+    this._publishQueue.applyUpdate(optimisticUpdate);
     this._publishQueue.run();
     return {dispose};
   }
 
-  commitPayload(
-    selector: Selector,
-    payload: PayloadData,
-  ): void {
+  check(selector: Selector): boolean {
+    return this._store.check(selector);
+  }
+
+  commitPayload(selector: Selector, payload: PayloadData): void {
     // Do not handle stripped nulls when commiting a payload
     const relayPayload = normalizeRelayPayload(selector, payload);
     this._publishQueue.commitPayload(selector, relayPayload);
@@ -121,20 +124,23 @@ class RelayStaticEnvironment implements Environment {
     const dispose = () => {
       isDisposed = true;
     };
-    this._network.request(operation.node, operation.variables, cacheConfig).then(payload => {
-      if (isDisposed) {
-        return;
-      }
-      this._publishQueue.commitPayload(operation.fragment, payload);
-      this._publishQueue.run();
-      onNext && onNext(payload);
-      onCompleted && onCompleted();
-    }).catch(error => {
-      if (isDisposed) {
-        return;
-      }
-      onError && onError(error);
-    });
+    this._network
+      .request(operation.node, operation.variables, cacheConfig)
+      .then(payload => {
+        if (isDisposed) {
+          return;
+        }
+        this._publishQueue.commitPayload(operation.fragment, payload);
+        this._publishQueue.run();
+        onNext && onNext(payload);
+        onCompleted && onCompleted();
+      })
+      .catch(error => {
+        if (isDisposed) {
+          return;
+        }
+        onError && onError(error);
+      });
     return {dispose};
   }
 
@@ -171,6 +177,7 @@ class RelayStaticEnvironment implements Environment {
     onCompleted,
     onError,
     operation,
+    optimisticResponse,
     optimisticUpdater,
     updater,
     uploadables,
@@ -178,48 +185,53 @@ class RelayStaticEnvironment implements Environment {
     onCompleted?: ?(errors: ?Array<PayloadError>) => void,
     onError?: ?(error: Error) => void,
     operation: OperationSelector,
-    optimisticUpdater?: ?StoreUpdater,
+    optimisticUpdater?: ?SelectorStoreUpdater,
+    optimisticResponse?: ?() => Object,
     updater?: ?SelectorStoreUpdater,
     uploadables?: UploadableMap,
   }): Disposable {
-    if (optimisticUpdater) {
-      this._publishQueue.applyUpdate(optimisticUpdater);
+    let hasOptimisticUpdate = optimisticResponse || optimisticUpdater;
+    const optimisticUpdate = {
+      selector: operation.fragment,
+      selectorStoreUpdater: optimisticUpdater,
+      response: optimisticResponse ? optimisticResponse() : null,
+    };
+    if (hasOptimisticUpdate) {
+      this._publishQueue.applyUpdate(optimisticUpdate);
       this._publishQueue.run();
     }
     let isDisposed = false;
     const dispose = () => {
-      if (optimisticUpdater) {
-        this._publishQueue.revertUpdate(optimisticUpdater);
+      if (hasOptimisticUpdate) {
+        this._publishQueue.revertUpdate(optimisticUpdate);
         this._publishQueue.run();
-        optimisticUpdater = null;
+        hasOptimisticUpdate = false;
       }
       isDisposed = true;
     };
-    this._network.request(
-      operation.node,
-      operation.variables,
-      {force: true},
-      uploadables,
-    ).then(payload => {
-      if (isDisposed) {
-        return;
-      }
-      if (optimisticUpdater) {
-        this._publishQueue.revertUpdate(optimisticUpdater);
-      }
-      this._publishQueue.commitPayload(operation.fragment, payload, updater);
-      this._publishQueue.run();
-      onCompleted && onCompleted(payload.errors);
-    }).catch(error => {
-      if (isDisposed) {
-        return;
-      }
-      if (optimisticUpdater) {
-        this._publishQueue.revertUpdate(optimisticUpdater);
-      }
-      this._publishQueue.run();
-      onError && onError(error);
-    });
+    this._network
+      .request(operation.node, operation.variables, {force: true}, uploadables)
+      .then(payload => {
+        if (isDisposed) {
+          return;
+        }
+        if (hasOptimisticUpdate) {
+          this._publishQueue.revertUpdate(optimisticUpdate);
+        }
+        this._publishQueue.commitPayload(operation.fragment, payload, updater);
+        this._publishQueue.run();
+        onCompleted && onCompleted(payload.errors);
+      })
+      .catch(error => {
+        if (isDisposed) {
+          return;
+        }
+        if (hasOptimisticUpdate) {
+          this._publishQueue.revertUpdate(optimisticUpdate);
+        }
+        this._publishQueue.run();
+        onError && onError(error);
+      });
     return {dispose};
   }
 
@@ -244,7 +256,11 @@ class RelayStaticEnvironment implements Environment {
         onCompleted,
         onError,
         onNext: payload => {
-          this._publishQueue.commitPayload(operation.fragment, payload, updater);
+          this._publishQueue.commitPayload(
+            operation.fragment,
+            payload,
+            updater,
+          );
           this._publishQueue.run();
           onNext && onNext(payload);
         },
@@ -253,4 +269,9 @@ class RelayStaticEnvironment implements Environment {
   }
 }
 
-module.exports = RelayStaticEnvironment;
+// Add a sigil for detection by `isRelayModernEnvironment()` to avoid a
+// realm-specific instanceof check, and to aid in module tree-shaking to
+// avoid requiring all of RelayRuntime just to detect its environment.
+(RelayModernEnvironment: any).prototype['@@RelayModernEnvironment'] = true;
+
+module.exports = RelayModernEnvironment;

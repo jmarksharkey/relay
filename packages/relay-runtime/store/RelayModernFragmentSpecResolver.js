@@ -6,8 +6,9 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @providesModule RelayStaticFragmentSpecResolver
+ * @providesModule RelayModernFragmentSpecResolver
  * @flow
+ * @format
  */
 
 'use strict';
@@ -16,7 +17,10 @@ const forEachObject = require('forEachObject');
 const invariant = require('invariant');
 const isScalarAndEqual = require('isScalarAndEqual');
 
-const {areEqualSelectors, getSelectorsFromObject} = require('RelayStaticSelector');
+const {
+  areEqualSelectors,
+  getSelectorsFromObject,
+} = require('RelayModernSelector');
 
 import type {
   Disposable,
@@ -55,7 +59,7 @@ type Resolvers = {[key: string]: ?(SelectorListResolver | SelectorResolver)};
  * the resolver as stale and notify the caller, and the actual results are
  * recomputed the first time `resolve()` is called.
  */
-class RelayStaticFragmentSpecResolver implements FragmentSpecResolver {
+class RelayModernFragmentSpecResolver implements FragmentSpecResolver {
   _callback: () => void;
   _context: RelayContext;
   _data: Object;
@@ -129,22 +133,30 @@ class RelayStaticFragmentSpecResolver implements FragmentSpecResolver {
         resolver = null;
       } else if (Array.isArray(selector)) {
         if (resolver == null) {
-          resolver = new SelectorListResolver(this._context.environment, selector, this._onChange);
+          resolver = new SelectorListResolver(
+            this._context.environment,
+            selector,
+            this._onChange,
+          );
         } else {
           invariant(
             resolver instanceof SelectorListResolver,
-            'RelayStaticFragmentSpecResolver: Expected prop `%s` to always be an array.',
+            'RelayModernFragmentSpecResolver: Expected prop `%s` to always be an array.',
             key,
           );
           resolver.setSelectors(selector);
         }
       } else {
         if (resolver == null) {
-          resolver = new SelectorResolver(this._context.environment, selector, this._onChange);
+          resolver = new SelectorResolver(
+            this._context.environment,
+            selector,
+            this._onChange,
+          );
         } else {
           invariant(
             resolver instanceof SelectorResolver,
-            'RelayStaticFragmentSpecResolver: Expected prop `%s` to always be an object.',
+            'RelayModernFragmentSpecResolver: Expected prop `%s` to always be an object.',
             key,
           );
           resolver.setSelector(selector);
@@ -168,7 +180,7 @@ class RelayStaticFragmentSpecResolver implements FragmentSpecResolver {
   _onChange = (): void => {
     this._stale = true;
     this._callback();
-  }
+  };
 }
 
 /**
@@ -206,7 +218,10 @@ class SelectorResolver {
   }
 
   setSelector(selector: Selector): void {
-    if (this._subscription != null && areEqualSelectors(selector, this._selector)) {
+    if (
+      this._subscription != null &&
+      areEqualSelectors(selector, this._selector)
+    ) {
       return;
     }
     this.dispose();
@@ -227,7 +242,7 @@ class SelectorResolver {
   _onChange = (snapshot: Snapshot): void => {
     this._data = snapshot.data;
     this._callback();
-  }
+  };
 }
 
 /**
@@ -305,11 +320,11 @@ class SelectorListResolver {
   _onChange = (data: ?Object): void => {
     this._stale = true;
     this._callback();
-  }
+  };
 }
 
 function disposeCallback(disposable: ?Disposable): void {
   disposable && disposable.dispose();
 }
 
-module.exports = RelayStaticFragmentSpecResolver;
+module.exports = RelayModernFragmentSpecResolver;

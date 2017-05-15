@@ -8,6 +8,7 @@
  *
  * @providesModule RelayCompatRefetchContainer
  * @flow
+ * @format
  */
 
 'use strict';
@@ -17,7 +18,7 @@ const ReactRelayRefetchContainer = require('ReactRelayRefetchContainer');
 const {buildCompatContainer} = require('ReactRelayCompatContainerBuilder');
 
 import type {GeneratedNodeMap} from 'ReactRelayTypes';
-import type {GraphQLTaggedNode} from 'RelayStaticGraphQLTag';
+import type {GraphQLTaggedNode} from 'RelayModernGraphQLTag';
 
 /**
  * Wrap the basic `createContainer()` function with logic to adapt to the
@@ -35,7 +36,7 @@ function createContainer<TBase: ReactClass<*>>(
     Component,
     (fragmentSpec: any),
     (ComponentClass, fragments) => {
-      return ReactRelayRefetchContainer.createContainer(
+      return ReactRelayRefetchContainer.createContainerWithFragments(
         ComponentClass,
         fragments,
         taggedNode,

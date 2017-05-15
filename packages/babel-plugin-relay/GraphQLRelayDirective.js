@@ -8,6 +8,7 @@
  *
  * @flow
  * @fullSyntaxTransform
+ * @format
  */
 
 'use strict';
@@ -24,20 +25,12 @@ module.exports = {
   description: 'The @relay directive.',
   args: {
     isConnectionWithoutNodeID: {
-      description:
-        'Marks a connection field as containing nodes without `id` fields. ' +
+      description: 'Marks a connection field as containing nodes without `id` fields. ' +
         'This is used to silence the warning when diffing connections.',
       type: GraphQLBoolean,
     },
-    isStaticFragment: {
-      description:
-        'Marks a fragment as static. A static fragment will share the same ' +
-        'identity regardless of how many times the expression is evaluated.',
-      type: GraphQLBoolean,
-    },
     pattern: {
-      description:
-        'Marks a fragment as intended for pattern matching (as opposed to ' +
+      description: 'Marks a fragment as intended for pattern matching (as opposed to ' +
         'fetching).',
       type: GraphQLBoolean,
     },
@@ -50,8 +43,5 @@ module.exports = {
       type: new GraphQLList(GraphQLString),
     },
   },
-  locations: [
-    DirectiveLocation.FIELD,
-    DirectiveLocation.FRAGMENT_DEFINITION,
-  ],
+  locations: [DirectiveLocation.FIELD, DirectiveLocation.FRAGMENT_DEFINITION],
 };

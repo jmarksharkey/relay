@@ -8,6 +8,7 @@
  *
  * @providesModule RelayCompatPaginationContainer
  * @flow
+ * @format
  */
 
 'use strict';
@@ -18,7 +19,7 @@ const {buildCompatContainer} = require('ReactRelayCompatContainerBuilder');
 
 import type {ConnectionConfig} from 'ReactRelayPaginationContainer';
 import type {GeneratedNodeMap} from 'ReactRelayTypes';
-import type {GraphQLTaggedNode} from 'RelayStaticGraphQLTag';
+import type {GraphQLTaggedNode} from 'RelayModernGraphQLTag';
 
 /**
  * Wrap the basic `createContainer()` function with logic to adapt to the
@@ -36,7 +37,7 @@ function createContainer<TBase: ReactClass<*>>(
     Component,
     (fragmentSpec: any),
     (ComponentClass, fragments) => {
-      return ReactRelayPaginationContainer.createContainer(
+      return ReactRelayPaginationContainer.createContainerWithFragments(
         ComponentClass,
         fragments,
         connectionConfig,

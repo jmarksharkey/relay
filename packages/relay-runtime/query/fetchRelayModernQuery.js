@@ -6,8 +6,9 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @providesModule fetchRelayStaticQuery
+ * @providesModule fetchRelayModernQuery
  * @flow
+ * @format
  */
 
 'use strict';
@@ -15,7 +16,7 @@
 const invariant = require('invariant');
 
 import type {CacheConfig} from 'RelayCombinedEnvironmentTypes';
-import type {GraphQLTaggedNode} from 'RelayStaticGraphQLTag';
+import type {GraphQLTaggedNode} from 'RelayModernGraphQLTag';
 import type {Variables} from 'RelayTypes';
 
 /**
@@ -31,7 +32,7 @@ import type {Variables} from 'RelayTypes';
  * can probably leverage generated flow types here to return the real expected
  * shape.
  */
-function fetchRelayStaticQuery(
+function fetchRelayModernQuery(
   environment: $FlowFixMe,
   taggedNode: GraphQLTaggedNode,
   variables: Variables,
@@ -39,13 +40,10 @@ function fetchRelayStaticQuery(
 ): Promise<$FlowFixMe> {
   invariant(
     environment.unstable_internal,
-    'fetchRelayStaticQuery: Expected a valid Relay environment, got `%s`.',
+    'fetchRelayModernQuery: Expected a valid Relay environment, got `%s`.',
     environment,
   );
-  const {
-    createOperationSelector,
-    getOperation,
-  } = environment.unstable_internal;
+  const {createOperationSelector, getOperation} = environment.unstable_internal;
   const query = getOperation(taggedNode);
   const operation = createOperationSelector(query, variables);
   return new Promise((resolve, reject) => {
@@ -65,4 +63,4 @@ function fetchRelayStaticQuery(
   });
 }
 
-module.exports = fetchRelayStaticQuery;
+module.exports = fetchRelayModernQuery;

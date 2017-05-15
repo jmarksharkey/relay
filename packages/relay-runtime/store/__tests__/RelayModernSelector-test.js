@@ -5,13 +5,13 @@
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ * @format
  */
 
 'use strict';
 
-jest
-  .mock('warning')
-  .autoMockOff();
+jest.mock('warning').autoMockOff();
 
 const {
   areEqualSelectors,
@@ -20,12 +20,12 @@ const {
   getSelectorList,
   getSelectorsFromObject,
   getVariablesFromObject,
-} = require('RelayStaticSelector');
-const {createMockEnvironment} = require('RelayStaticMockEnvironment');
+} = require('RelayModernSelector');
+const {createMockEnvironment} = require('RelayModernMockEnvironment');
 const {ROOT_ID} = require('RelayStoreUtils');
-const RelayStaticTestUtils = require('RelayStaticTestUtils');
+const RelayModernTestUtils = require('RelayModernTestUtils');
 
-describe('RelayStaticSelector', () => {
+describe('RelayModernSelector', () => {
   let UserFragment;
   let UserQuery;
   let UsersFragment;
@@ -34,10 +34,11 @@ describe('RelayStaticSelector', () => {
   let variables;
 
   beforeEach(() => {
-    jasmine.addMatchers(RelayStaticTestUtils.matchers);
+    jasmine.addMatchers(RelayModernTestUtils.matchers);
 
     environment = createMockEnvironment();
-    ({UserFragment, UserQuery, UsersFragment} = environment.mock.compile(`
+    ({UserFragment, UserQuery, UsersFragment} = environment.mock.compile(
+      `
       query UserQuery($id: ID!, $size: Int, $cond: Boolean!) {
         node(id: $id) {
           ...UserFragment
@@ -58,7 +59,8 @@ describe('RelayStaticSelector', () => {
           uri
         }
       }
-    `));
+    `,
+    ));
     environment.commitPayload(
       {
         dataID: ROOT_ID,
@@ -86,16 +88,18 @@ describe('RelayStaticSelector', () => {
 
   describe('getSelector()', () => {
     it('throws for invalid inputs', () => {
-      expect(() => getSelector(variables, UserFragment, 'zuck'))
-        .toFailInvariant(
-          'RelayStaticSelector: Expected value for fragment `UserFragment` to ' +
-          'be an object, got `"zuck"`.'
-        );
-      expect(() => getSelector(variables, UserFragment, [zuck]))
-        .toFailInvariant(
-          'RelayStaticSelector: Expected value for fragment `UserFragment` to be an object, got ' +
-          '`[{"__fragments":{"UserFragment":{},"UsersFragment":{}},"__id":"4"}]`.'
-        );
+      expect(() =>
+        getSelector(variables, UserFragment, 'zuck'),
+      ).toFailInvariant(
+        'RelayModernSelector: Expected value for fragment `UserFragment` to ' +
+          'be an object, got `"zuck"`.',
+      );
+      expect(() =>
+        getSelector(variables, UserFragment, [zuck]),
+      ).toFailInvariant(
+        'RelayModernSelector: Expected value for fragment `UserFragment` to be an object, got ' +
+          '`[{"__fragments":{"UserFragment":{},"UsersFragment":{}},"__id":"4"}]`.',
+      );
     });
 
     it('returns null and warns for unfetched fragment data', () => {
@@ -103,9 +107,9 @@ describe('RelayStaticSelector', () => {
       expect(() => {
         selector = getSelector(variables, UserFragment, {});
       }).toWarn([
-        'RelayStaticSelector: Expected object to contain data for fragment ' +
-        '`%s`, got `%s`. Make sure that the parent ' +
-        'operation/fragment included fragment `...%s`.',
+        'RelayModernSelector: Expected object to contain data for fragment ' +
+          '`%s`, got `%s`. Make sure that the parent ' +
+          'operation/fragment included fragment `...%s`.',
         'UserFragment',
         '{}',
         'UserFragment',
@@ -125,11 +129,12 @@ describe('RelayStaticSelector', () => {
 
   describe('getSelectorList()', () => {
     it('throws for invalid inputs', () => {
-      expect(() => getSelectorList(variables, UserFragment, ['zuck']))
-        .toFailInvariant(
-          'RelayStaticSelector: Expected value for fragment `UserFragment` to be ' +
-          'an object, got `"zuck"`.'
-        );
+      expect(() =>
+        getSelectorList(variables, UserFragment, ['zuck']),
+      ).toFailInvariant(
+        'RelayModernSelector: Expected value for fragment `UserFragment` to be ' +
+          'an object, got `"zuck"`.',
+      );
     });
 
     it('returns null and warns for unfetched fragment data', () => {
@@ -137,9 +142,9 @@ describe('RelayStaticSelector', () => {
       expect(() => {
         selectors = getSelectorList(variables, UserFragment, [{}]);
       }).toWarn([
-        'RelayStaticSelector: Expected object to contain data for fragment ' +
-        '`%s`, got `%s`. Make sure that the parent ' +
-        'operation/fragment included fragment `...%s`.',
+        'RelayModernSelector: Expected object to contain data for fragment ' +
+          '`%s`, got `%s`. Make sure that the parent ' +
+          'operation/fragment included fragment `...%s`.',
         'UserFragment',
         '{}',
         'UserFragment',
@@ -149,23 +154,23 @@ describe('RelayStaticSelector', () => {
 
     it('returns selectors', () => {
       const selectors = getSelectorList(variables, UserFragment, [zuck]);
-      expect(selectors).toEqual([{
-        dataID: '4',
-        node: UserFragment,
-        variables,
-      }]);
+      expect(selectors).toEqual([
+        {
+          dataID: '4',
+          node: UserFragment,
+          variables,
+        },
+      ]);
     });
   });
 
   describe('getSelectorsFromObject()', () => {
     it('throws for invalid inputs', () => {
-      expect(() => getSelectorsFromObject(
-        variables,
-        {user: UserFragment},
-        {user: 'zuck'},
-      )).toFailInvariant(
-        'RelayStaticSelector: Expected value for fragment `UserFragment` to be an ' +
-        'object, got `"zuck"`.'
+      expect(() =>
+        getSelectorsFromObject(variables, {user: UserFragment}, {user: 'zuck'}),
+      ).toFailInvariant(
+        'RelayModernSelector: Expected value for fragment `UserFragment` to be an ' +
+          'object, got `"zuck"`.',
       );
     });
 
@@ -178,9 +183,9 @@ describe('RelayStaticSelector', () => {
           {user: {}},
         );
       }).toWarn([
-        'RelayStaticSelector: Expected object to contain data for fragment ' +
-        '`%s`, got `%s`. Make sure that the parent ' +
-        'operation/fragment included fragment `...%s`.',
+        'RelayModernSelector: Expected object to contain data for fragment ' +
+          '`%s`, got `%s`. Make sure that the parent ' +
+          'operation/fragment included fragment `...%s`.',
         'UserFragment',
         '{}',
         'UserFragment',
@@ -248,37 +253,35 @@ describe('RelayStaticSelector', () => {
         {user: [zuck]},
       );
       expect(selectors).toEqual({
-        user: [{
-          dataID: '4',
-          node: UsersFragment,
-          variables,
-        }],
+        user: [
+          {
+            dataID: '4',
+            node: UsersFragment,
+            variables,
+          },
+        ],
       });
     });
   });
 
   describe('getDataIDsFromObject()', () => {
     it('throws for invalid inputs', () => {
-      expect(() => getDataIDsFromObject(
-        {user: UserFragment},
-        {user: 'zuck'},
-      )).toFailInvariant(
-        'RelayStaticSelector: Expected value for fragment `UserFragment` to be an ' +
-        'object, got `"zuck"`.'
+      expect(() =>
+        getDataIDsFromObject({user: UserFragment}, {user: 'zuck'}),
+      ).toFailInvariant(
+        'RelayModernSelector: Expected value for fragment `UserFragment` to be an ' +
+          'object, got `"zuck"`.',
       );
     });
 
     it('returns null and warns for unfetched fragment data', () => {
       let ids;
       expect(() => {
-        ids = getDataIDsFromObject(
-          {user: UserFragment},
-          {user: {}},
-        );
+        ids = getDataIDsFromObject({user: UserFragment}, {user: {}});
       }).toWarn([
-        'RelayStaticSelector: Expected object to contain data for fragment ' +
-        '`%s`, got `%s`. Make sure that the parent ' +
-        'operation/fragment included fragment `...%s`.',
+        'RelayModernSelector: Expected object to contain data for fragment ' +
+          '`%s`, got `%s`. Make sure that the parent ' +
+          'operation/fragment included fragment `...%s`.',
         'UserFragment',
         '{}',
         'UserFragment',
@@ -301,27 +304,18 @@ describe('RelayStaticSelector', () => {
     });
 
     it('passes through null/undefined values', () => {
-      let dataIDs = getDataIDsFromObject(
-        {user: UserFragment},
-        {user: null},
-      );
+      let dataIDs = getDataIDsFromObject({user: UserFragment}, {user: null});
       expect(dataIDs).toEqual({
         user: null,
       });
-      dataIDs = getDataIDsFromObject(
-        {user: UserFragment},
-        {user: undefined},
-      );
+      dataIDs = getDataIDsFromObject({user: UserFragment}, {user: undefined});
       expect(dataIDs).toEqual({
         user: undefined,
       });
     });
 
     it('returns singular ids', () => {
-      const dataIDs = getDataIDsFromObject(
-        {user: UserFragment},
-        {user: zuck},
-      );
+      const dataIDs = getDataIDsFromObject({user: UserFragment}, {user: zuck});
       expect(dataIDs).toEqual({
         user: '4',
       });
@@ -347,13 +341,15 @@ describe('RelayStaticSelector', () => {
     };
 
     it('throws for invalid inputs', () => {
-      expect(() => getVariablesFromObject(
-        inputVariables,
-        {user: UserFragment},
-        {user: 'zuck'},
-      )).toFailInvariant(
-        'RelayStaticSelector: Expected value for fragment `UserFragment` to be an ' +
-        'object, got `"zuck"`.'
+      expect(() =>
+        getVariablesFromObject(
+          inputVariables,
+          {user: UserFragment},
+          {user: 'zuck'},
+        ),
+      ).toFailInvariant(
+        'RelayModernSelector: Expected value for fragment `UserFragment` to be an ' +
+          'object, got `"zuck"`.',
       );
     });
 
@@ -366,9 +362,9 @@ describe('RelayStaticSelector', () => {
           {user: {}},
         );
       }).toWarn([
-        'RelayStaticSelector: Expected object to contain data for fragment ' +
-        '`%s`, got `%s`. Make sure that the parent ' +
-        'operation/fragment included fragment `...%s`.',
+        'RelayModernSelector: Expected object to contain data for fragment ' +
+          '`%s`, got `%s`. Make sure that the parent ' +
+          'operation/fragment included fragment `...%s`.',
         'UserFragment',
         '{}',
         'UserFragment',

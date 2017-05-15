@@ -8,29 +8,31 @@
  *
  * @providesModule RelayCompatMutations
  * @flow
+ * @format
  */
 
 'use strict';
 
 const invariant = require('invariant');
+const warning = require('warning');
 
 const {
   getRelayClassicEnvironment,
-  getRelayStaticEnvironment,
+  getRelayModernEnvironment,
 } = require('RelayCompatEnvironment');
 const {commitMutation} = require('RelayRuntime');
 
 import type {Disposable} from 'RelayCombinedEnvironmentTypes';
 import type {CompatEnvironment} from 'RelayCompatTypes';
 import type {Environment as ClassicEnvironment} from 'RelayEnvironmentTypes';
-import type {MutationConfig} from 'commitRelayStaticMutation';
+import type {MutationConfig} from 'commitRelayModernMutation';
 
 const RelayCompatMutations = {
   commitUpdate(
     environment: CompatEnvironment,
-    config: MutationConfig
+    config: MutationConfig,
   ): Disposable {
-    const relayStaticEnvironment = getRelayStaticEnvironment(environment);
+    const relayStaticEnvironment = getRelayModernEnvironment(environment);
     if (relayStaticEnvironment) {
       return commitMutation(relayStaticEnvironment, config);
     } else {
@@ -38,14 +40,14 @@ const RelayCompatMutations = {
       invariant(
         relayClassicEnvironment,
         'RelayCompatMutations: Expected an object that conforms to the ' +
-        '`RelayEnvironmentInterface`, got `%s`.',
-        environment
+          '`RelayEnvironmentInterface`, got `%s`.',
+        environment,
       );
       return commitRelay1Mutation(
         // getRelayClassicEnvironment returns a RelayEnvironmentInterface
         // (classic APIs), but we need the modern APIs on old core here.
         (relayClassicEnvironment: $FixMe),
-        config
+        config,
       );
     }
   },
@@ -61,10 +63,30 @@ function commitRelay1Mutation(
     optimisticResponse,
     variables,
     uploadables,
-  }: MutationConfig
+  }: MutationConfig,
 ): Disposable {
   const {getOperation} = environment.unstable_internal;
   const operation = getOperation(mutation);
+  if (
+    optimisticResponse &&
+    operation.node.kind === 'Mutation' &&
+    operation.node.calls &&
+    operation.node.calls.length === 1
+  ) {
+    const mutationRoot = operation.node.calls[0].name;
+    const optimisticResponseObject = optimisticResponse();
+    if (optimisticResponseObject[mutationRoot]) {
+      optimisticResponse = () => optimisticResponseObject[mutationRoot];
+    } else {
+      warning(
+        false,
+        'RelayCompatMutations: Expected result from `optimisticResponse()`' +
+          'to contain the mutation name `%s` as a property, got `%s`',
+        mutationRoot,
+        optimisticResponseObject,
+      );
+    }
+  }
   return environment.sendMutation({
     configs: configs || [],
     operation,

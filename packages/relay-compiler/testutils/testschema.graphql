@@ -56,6 +56,7 @@ type RouteStep {
 
 type Mutation {
   actorSubscribe(input: ActorSubscribeInput): ActorSubscribeResponsePayload
+  actorNameChange(input: ActorNameChangeInput): ActorNameChangePayload
   applicationRequestDeleteAll(input: ApplicationRequestDeleteAllInput): ApplicationRequestDeleteAllResponsePayload
   commentCreate(input: CommentCreateInput): CommentCreateResponsePayload
   commentDelete(input: CommentDeleteInput): CommentDeleteResponsePayload
@@ -73,6 +74,11 @@ type Subscription {
 input ActorSubscribeInput {
   clientMutationId: String
   subscribeeId: ID
+}
+
+input ActorNameChangeInput {
+  clientMutationId: String
+  newName: String
 }
 
 input ApplicationRequestDeleteAllInput {
@@ -110,6 +116,11 @@ type ActorSubscribeResponsePayload {
   subscribee: Actor
 }
 
+type ActorNameChangePayload {
+  clientMutationId: String
+  actor: Actor
+}
+
 type ApplicationRequestDeleteAllResponsePayload {
   clientMutationId: String
   deletedRequestIds: [ID]
@@ -121,6 +132,7 @@ type CheckinSearchResult {
 
 input CheckinSearchInput {
   query: String
+  inputs: [CheckinSearchInput]
 }
 
 type Comment implements Node {

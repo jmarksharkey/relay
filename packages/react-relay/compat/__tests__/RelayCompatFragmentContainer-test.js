@@ -7,6 +7,7 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @emails oncall+relay
+ * @format
  */
 
 'use strict';
@@ -15,11 +16,11 @@ jest.autoMockOff();
 
 const React = require('React');
 const RelayCompatFragmentContainer = require('RelayCompatContainer');
-const RelayStaticTestUtils = require('RelayStaticTestUtils');
+const RelayModernTestUtils = require('RelayModernTestUtils');
 
 describe('RelayCompatFragmentContainer', () => {
   beforeEach(() => {
-    jasmine.addMatchers(RelayStaticTestUtils.matchers);
+    jasmine.addMatchers(RelayModernTestUtils.matchers);
   });
 
   it('throws for invalid fragments', () => {
@@ -30,8 +31,8 @@ describe('RelayCompatFragmentContainer', () => {
       });
     }).toFailInvariant(
       'Could not create Relay Container for `TestComponent`. ' +
-      'The value of fragment `foo` was expected to be a fragment, ' +
-      'got `null` instead.'
+        'The value of fragment `foo` was expected to be a fragment, ' +
+        'got `null` instead.',
     );
   });
 });

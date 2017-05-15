@@ -7,6 +7,7 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  *
  * @flow
+ * @format
  */
 
 'use strict';
@@ -20,7 +21,6 @@ const RELAY_DIRECTIVES = `
   directive @skip(if: Boolean) on FRAGMENT_DEFINITION | FRAGMENT_SPREAD | INLINE_FRAGMENT | FIELD
   directive @relay(
     isConnectionWithoutNodeID: Boolean,
-    isStaticFragment: Boolean,
     pattern: Boolean,
     plural: Boolean,
     variables: [String],
@@ -28,7 +28,7 @@ const RELAY_DIRECTIVES = `
   directive ${'@'}generated on OPERATION | FRAGMENT_DEFINITION | FRAGMENT_SPREAD | INLINE_FRAGMENT
 `;
 
-function getSchemaIntrospection(schemaPath /*: string*/) {
+function getSchemaIntrospection(schemaPath: string) {
   try {
     const source = fs.readFileSync(schemaPath, 'utf8');
     if (source[0] === '{') {
@@ -39,8 +39,9 @@ function getSchemaIntrospection(schemaPath /*: string*/) {
     // Log a more helpful warning (by including the schema path).
     console.error(
       'Encountered the following error while loading the GraphQL schema: ' +
-      schemaPath + '\n\n' +
-      error.stack.split('\n').map(line => '> ' + line).join('\n')
+        schemaPath +
+        '\n\n' +
+        error.stack.split('\n').map(line => '> ' + line).join('\n'),
     );
     throw error;
   }

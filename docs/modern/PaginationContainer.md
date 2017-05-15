@@ -37,8 +37,8 @@ isLoading: () => boolean,
  */
 loadMore: (
   pageSize: number,
-  callback: (error: ?Error) => void,
-  options?: RefetchOptions
+  callback: ?(error: ?Error) => void,
+  options: ?RefetchOptions
 ) => ?Disposable,
 
 /**
@@ -127,6 +127,10 @@ module.exports = createPaginationContainer(
     `,
   },
   {
+    direction: 'forward',
+    getConnectionFromProps(props) {
+      return props.user && props.user.feed;
+    },
     getFragmentVariables(prevVars, totalCount) {
       return {
         ...prevVars,
@@ -145,7 +149,7 @@ module.exports = createPaginationContainer(
     query: graphql`
       query FeedPaginationQuery(
         $count: Int!
-        $cursor: ID
+        $cursor: String
         $orderby: String!
       ) {
         user {

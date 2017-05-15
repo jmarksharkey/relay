@@ -8,6 +8,7 @@
  *
  * @providesModule RelayStoreTypes
  * @flow
+ * @format
  */
 
 'use strict';
@@ -23,15 +24,19 @@ import type {
   Disposable,
   Record,
 } from 'RelayCombinedEnvironmentTypes';
-import type {ConcreteBatch, ConcreteFragment, ConcreteSelectableNode} from 'RelayConcreteNode';
+import type {
+  ConcreteBatch,
+  ConcreteFragment,
+  ConcreteSelectableNode,
+} from 'RelayConcreteNode';
 import type {DataID} from 'RelayInternalTypes';
+import type {GraphQLTaggedNode} from 'RelayModernGraphQLTag';
 import type {
   PayloadError,
   RelayResponsePayload,
   UploadableMap,
 } from 'RelayNetworkTypes';
 import type {RecordState} from 'RelayRecordState';
-import type {GraphQLTaggedNode} from 'RelayStaticGraphQLTag';
 import type {Variables} from 'RelayTypes';
 
 type TEnvironment = Environment;
@@ -45,7 +50,9 @@ export type FragmentMap = CFragmentMap<TFragment>;
 export type OperationSelector = COperationSelector<TNode, TOperation>;
 export type RelayContext = CRelayContext<TEnvironment>;
 export type Selector = CSelector<TNode>;
-export type Snapshot = CSnapshot<TNode>;
+export type TSnapshot<TRecord> = CSnapshot<TNode, TRecord>;
+export type Snapshot = TSnapshot<Record>;
+export type ProxySnapshot = TSnapshot<RecordProxy>;
 export type UnstableEnvironmentCore = CUnstableEnvironmentCore<
   TEnvironment,
   TFragment,
@@ -54,17 +61,21 @@ export type UnstableEnvironmentCore = CUnstableEnvironmentCore<
   TOperation,
 >;
 
+export interface IRecordSource<TRecord> {
+  get(dataID: DataID): ?TRecord,
+}
+
 /**
  * A read-only interface for accessing cached graph data.
  */
-export interface RecordSource {
+export interface RecordSource extends IRecordSource<Record> {
   get(dataID: DataID): ?Record,
   getRecordIDs(): Array<DataID>,
   getStatus(dataID: DataID): RecordState,
   has(dataID: DataID): boolean,
   load(
     dataID: DataID,
-    callback: (error: ?Error, record: ?Record) => void
+    callback: (error: ?Error, record: ?Record) => void,
   ): void,
   size(): number,
 }
@@ -90,6 +101,12 @@ export interface Store {
   getSource(): RecordSource,
 
   /**
+   * Determine if the selector can be resolved with data in the store (i.e. no
+   * fields are missing).
+   */
+  check(selector: Selector): boolean,
+
+  /**
    * Read the results of a selector from in-memory records in the store.
    */
   lookup(selector: Selector): Snapshot,
@@ -109,12 +126,12 @@ export interface Store {
 
   /**
    * Attempts to load all the records necessary to fulfill the selector into the
-   * in-memory record source.
+   * target record source.
    */
   resolve(
     target: MutableRecordSource,
     selector: Selector,
-    callback: AsyncLoadCallback
+    callback: AsyncLoadCallback,
   ): void,
 
   /**
@@ -131,7 +148,7 @@ export interface Store {
    */
   subscribe(
     snapshot: Snapshot,
-    callback: (snapshot: Snapshot) => void
+    callback: (snapshot: Snapshot) => void,
   ): Disposable,
 }
 
@@ -146,11 +163,23 @@ export interface RecordProxy {
   getDataID(): DataID,
   getLinkedRecord(name: string, args?: ?Variables): ?RecordProxy,
   getLinkedRecords(name: string, args?: ?Variables): ?Array<?RecordProxy>,
-  getOrCreateLinkedRecord(name: string, typeName: string, args?: ?Variables): RecordProxy,
+  getOrCreateLinkedRecord(
+    name: string,
+    typeName: string,
+    args?: ?Variables,
+  ): RecordProxy,
   getType(): string,
   getValue(name: string, args?: ?Variables): mixed,
-  setLinkedRecord(record: RecordProxy, name: string, args?: ?Variables): RecordProxy,
-  setLinkedRecords(records: Array<?RecordProxy>, name: string, args?: ?Variables): RecordProxy,
+  setLinkedRecord(
+    record: RecordProxy,
+    name: string,
+    args?: ?Variables,
+  ): RecordProxy,
+  setLinkedRecords(
+    records: Array<?RecordProxy>,
+    name: string,
+    args?: ?Variables,
+  ): RecordProxy,
   setValue(value: mixed, name: string, args?: ?Variables): RecordProxy,
 }
 
@@ -160,8 +189,7 @@ export interface RecordProxy {
  * allowing different implementations that may e.g. create a changeset of
  * the modifications.
  */
-export interface RecordSourceProxy {
-  commitPayload(selector: Selector, response: Object): void,
+export interface RecordSourceProxy extends IRecordSource<RecordProxy> {
   create(dataID: DataID, typeName: string): RecordProxy,
   delete(dataID: DataID): void,
   get(dataID: DataID): ?RecordProxy,
@@ -172,32 +200,56 @@ export interface RecordSourceProxy {
  * Extends the RecordSourceProxy interface with methods for accessing the root
  * fields of a Selector.
  */
-export interface RecordSourceSelectorProxy {
+export interface RecordSourceSelectorProxy extends IRecordSource<RecordProxy> {
   create(dataID: DataID, typeName: string): RecordProxy,
   delete(dataID: DataID): void,
   get(dataID: DataID): ?RecordProxy,
   getRoot(): RecordProxy,
   getRootField(fieldName: string): ?RecordProxy,
   getPluralRootField(fieldName: string): ?Array<?RecordProxy>,
+  getResponse(): ?Object,
+}
+
+export interface IRecordReader<TRecord> {
+  getDataID(record: TRecord): DataID,
+  getType(record: TRecord): string,
+  getValue(record: TRecord, name: string, args?: ?Variables): mixed,
+  getLinkedRecordID(record: TRecord, name: string, args?: ?Variables): ?DataID,
+  getLinkedRecordIDs(
+    record: TRecord,
+    name: string,
+    args?: ?Variables,
+  ): ?Array<?DataID>,
 }
 
 /**
  * The public API of Relay core. Represents an encapsulated environment with its
  * own in-memory cache.
  */
-export interface Environment extends CEnvironment<
-  TEnvironment,
-  TFragment,
-  TGraphQLTaggedNode,
-  TNode,
-  TOperation,
-  TPayload,
-> {
+export interface Environment
+  extends CEnvironment<
+    TEnvironment,
+    TFragment,
+    TGraphQLTaggedNode,
+    TNode,
+    TOperation,
+    TPayload,
+  > {
   /**
    * Apply an optimistic update to the environment. The mutation can be reverted
    * by calling `dispose()` on the returned value.
    */
   applyUpdate(updater: StoreUpdater): Disposable,
+
+  /**
+   * Determine if the selector can be resolved with data in the store (i.e. no
+   * fields are missing).
+   *
+   * Note that this operation effectively "executes" the selector against the
+   * cache and therefore takes time proportional to the size/complexity of the
+   * selector.
+   */
+  check(selector: Selector): boolean,
 
   /**
    * Commit an updater to the environment. This mutation cannot be reverted and
@@ -220,7 +272,8 @@ export interface Environment extends CEnvironment<
     onCompleted?: ?(errors: ?Array<PayloadError>) => void,
     onError?: ?(error: Error) => void,
     operation: OperationSelector,
-    optimisticUpdater?: ?StoreUpdater,
+    optimisticResponse?: ?() => Object,
+    optimisticUpdater?: ?SelectorStoreUpdater,
     updater?: ?SelectorStoreUpdater,
     uploadables?: UploadableMap,
   |}): Disposable,
@@ -272,10 +325,7 @@ export type UpdatedRecords = {[dataID: DataID]: boolean};
  * field payload.
  */
 export type Handler = {
-  update: (
-    store: RecordSourceProxy,
-    fieldPayload: HandleFieldPayload,
-  ) => void,
+  update: (store: RecordSourceProxy, fieldPayload: HandleFieldPayload) => void,
 };
 
 /**

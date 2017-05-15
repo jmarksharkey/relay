@@ -8,6 +8,7 @@
  *
  * @providesModule RelayEnvironmentTypes
  * @flow
+ * @format
  */
 
 'use strict';
@@ -26,9 +27,10 @@ import type {
   CSnapshot,
   CUnstableEnvironmentCore,
   Disposable,
+  Record,
 } from 'RelayCombinedEnvironmentTypes';
+import type {GraphQLTaggedNode} from 'RelayModernGraphQLTag';
 import type {UploadableMap} from 'RelayNetworkTypes';
-import type {GraphQLTaggedNode} from 'RelayStaticGraphQLTag';
 import type {Variables, RelayMutationConfig} from 'RelayTypes';
 
 type TEnvironment = Environment;
@@ -42,7 +44,7 @@ export type FragmentMap = CFragmentMap<TFragment>;
 export type OperationSelector = COperationSelector<TNode, TOperation>;
 export type RelayContext = CRelayContext<TEnvironment>;
 export type Selector = CSelector<TNode>;
-export type Snapshot = CSnapshot<TNode>;
+export type Snapshot = CSnapshot<TNode, Record>;
 export type UnstableEnvironmentCore = CUnstableEnvironmentCore<
   TEnvironment,
   TFragment,
@@ -55,14 +57,15 @@ export type UnstableEnvironmentCore = CUnstableEnvironmentCore<
  * The public API of Relay core. Represents an encapsulated environment with its
  * own in-memory cache.
  */
-export interface Environment extends CEnvironment<
-  TEnvironment,
-  TFragment,
-  TGraphQLTaggedNode,
-  TNode,
-  TOperation,
-  TPayload,
-> {
+export interface Environment
+  extends CEnvironment<
+    TEnvironment,
+    TFragment,
+    TGraphQLTaggedNode,
+    TNode,
+    TOperation,
+    TPayload,
+  > {
   /**
    * Applies an optimistic mutation to the store without committing it to the
    * server. The returned Disposable can be used to revert this change at a
