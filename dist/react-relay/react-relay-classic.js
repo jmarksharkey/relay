@@ -1,5 +1,5 @@
 /**
- * Relay vundefined
+ * Relay v1.0.0-rc.4
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')

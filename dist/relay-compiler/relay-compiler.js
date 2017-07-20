@@ -1,5 +1,5 @@
 /**
- * Relay vundefined
+ * Relay v1.0.0-rc.4
  */
 module.exports =
 /******/ (function(modules) { // webpackBootstrap
@@ -3014,7 +3014,7 @@ module.exports =
 	        text: text
 	      };
 
-	      var res = __webpack_require__(81)('POST', 'http://localhost:8080/graphql/r', {
+	      var res = __webpack_require__(81)('POST', 'http://server:8080/graphql/r', {
 	        json: { name: batchQuery.name, text: batchQuery.text }
 	      });
 

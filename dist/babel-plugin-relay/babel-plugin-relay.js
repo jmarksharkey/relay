@@ -1,5 +1,5 @@
 /**
- * Relay vundefined
+ * Relay v1.0.0-rc.4
  */
 module.exports =
 /******/ (function(modules) { // webpackBootstrap

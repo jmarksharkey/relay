@@ -1,5 +1,5 @@
 /**
- * Relay vundefined
+ * Relay v1.0.0-rc.4
  *
  * Copyright (c) 2013-present, Facebook, Inc.
  * All rights reserved.

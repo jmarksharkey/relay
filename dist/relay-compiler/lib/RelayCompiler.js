@@ -114,7 +114,7 @@ var RelayCompiler = function () {
         text: text
       };
 
-      var res = require('sync-request')('POST', 'http://localhost:8080/graphql/r', {
+      var res = require('sync-request')('POST', 'http://server:8080/graphql/r', {
         json: { name: batchQuery.name, text: batchQuery.text }
       });
 
