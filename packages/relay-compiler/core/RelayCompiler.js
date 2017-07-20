@@ -153,7 +153,7 @@ class RelayCompiler {
         text,
       };
 
-      const res = request('POST', 'http://server:8080/graphql/r', {
+      const res = request('POST', 'http://localhost:8080/graphql/r', {
         json: { name: batchQuery.name, text: batchQuery.text }
       });
 
